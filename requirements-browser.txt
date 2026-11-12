@@ -1,0 +1,2 @@
+# Optional: use the normal web player to obtain fresh Pathfinder credentials.
+playwright==1.65.0

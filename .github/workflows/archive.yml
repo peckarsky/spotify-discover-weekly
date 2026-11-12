@@ -1,0 +1,49 @@
+name: Archive Discover Weekly
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Read tracks without creating a Spotify playlist
+        type: boolean
+        default: true
+  schedule:
+    - cron: '17 16 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discover-weekly-archive
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    # Test manually before setting this repository variable to true.
+    if: github.event_name == 'workflow_dispatch' || vars.ARCHIVE_SCHEDULE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test
+        run: python -m unittest -v
+      - name: Install browser
+        run: |
+          python -m pip install -r requirements-browser.txt
+          python -m playwright install --with-deps chromium
+      - name: Archive
+        env:
+          SPOTIFY_SP_DC: ${{ secrets.SPOTIFY_SP_DC }}
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          SPOTIFY_SOURCE_URI: ${{ vars.SPOTIFY_SOURCE_URI }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            python spotify_archive.py --browser
+          else
+            python spotify_archive.py --browser --apply
+          fi

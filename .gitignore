@@ -1,0 +1,10 @@
+__pycache__/
+.env
+.env.*
+!.env.example
+.spotify-credentials.json
+captures/
+.spotify-oauth.json
+.spotify-oauth.json.tmp-*
+.venv/
+
