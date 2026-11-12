@@ -100,7 +100,7 @@ def archive_details(capture):
     description = f"Discover Weekly for {week}. Source: {source} | {record}"
     return {
         "week": week, "uris": uris, "marker": marker,
-        "name": f"Discover Weekly — {week}", "description": description, "record": record,
+        "name": f"// Archive {week}", "description": description, "record": record,
     }
 
 

@@ -66,7 +66,7 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(archive(api, capture()), (PLAYLIST_ID, True))
         self.assertFalse(api.playlists[0]["public"])
         self.assertEqual(len(api.tracks), 30)
-        self.assertIn("2026-11-09", api.playlists[0]["name"])
+        self.assertEqual(api.playlists[0]["name"], "// Archive 2026-11-09")
         count = len(api.writes)
         self.assertEqual(archive(api, capture()), (PLAYLIST_ID, False))
         self.assertEqual(len(api.writes), count)

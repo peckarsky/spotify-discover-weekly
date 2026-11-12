@@ -29,7 +29,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Test
-        run: python -m unittest -v
+        run: |
+          python -m unittest -v
+          node --test .github/scripts/archive-notifications.test.js
       - name: Install browser
         run: |
           python -m pip install -r requirements-browser.txt
@@ -47,3 +49,27 @@ jobs:
           else
             python spotify_archive.py --browser --apply
           fi
+
+  notify:
+    needs: archive
+    if: always() && (needs.archive.result == 'failure' || needs.archive.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Open or resolve the failure alert
+        uses: actions/github-script@v7
+        env:
+          ARCHIVE_RESULT: ${{ needs.archive.result }}
+          ARCHIVE_DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        with:
+          script: |
+            const notify = require('./.github/scripts/archive-notifications.js');
+            await notify({
+              github, context, core,
+              result: process.env.ARCHIVE_RESULT,
+              dryRun: process.env.ARCHIVE_DRY_RUN === 'true',
+            });

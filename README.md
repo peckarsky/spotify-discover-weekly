@@ -1,7 +1,7 @@
 # Discover Weekly archives
 
 Save a separate private Spotify playlist each week, preserving the source's track
-order and duplicates. For example: `Discover Weekly — 2026-11-09`.
+order and duplicates. For example: `// Archive 2026-11-09`.
 
 The source reader uses Spotify's internal Pathfinder endpoint. A GitHub-hosted
 read of all 30 Discover Weekly tracks and private playlist creation have been
@@ -114,9 +114,10 @@ archived when you use the same Spotify account and source playlist.
 To enable daily archiving at 16:17 UTC, add the repository **variable**
 `ARCHIVE_SCHEDULE_ENABLED` with the value `true`. Scheduling remains disabled
 until you set this variable. Daily runs allow multiple chances to capture the
-weekly refresh. Keep failure notifications enabled in your GitHub notification
-settings. For another account, also set the `SPOTIFY_SOURCE_URI` repository
-variable to that account's Discover Weekly URI.
+weekly refresh. This runs every day of the week, at 8:17 AM Pacific in winter
+and 9:17 AM Pacific in summer. GitHub may delay scheduled jobs. For another
+account, also set the `SPOTIFY_SOURCE_URI` repository variable to that account's
+Discover Weekly URI.
 
 The runner uses Spotify playlist descriptions as persistent archive records.
 It does not need a writable GitHub token, committed state, or credential-bearing
@@ -128,6 +129,25 @@ GitHub may disable scheduled workflows in public repositories after 60 days
 without repository activity. Consider a private automation repo alongside a
 public source repo, or check scheduling regularly.
 [GitHub schedule documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
+## Failure notifications
+
+If an archive run fails, a separate notification job opens a GitHub issue assigned
+to the repository owner, with a run link and recovery instructions. Repeated
+failures reuse one open issue. A successful archive run closes it; a later
+failure reopens it. Successful read-only dry runs do not close failure alerts.
+The alert includes no credentials or raw logs. The notification job has issue
+write access; the archiver retains read-only repository access.
+
+For email delivery, open [GitHub notification settings](https://github.com/settings/notifications)
+and enable **Email** and **On GitHub** for **Participating, @mentions and custom**.
+GitHub Mobile can also notify you about assignments and mentions. Personal
+notification preferences determine delivery; the workflow cannot change them.
+[GitHub notification documentation](https://docs.github.com/en/subscriptions-and-notifications/get-started/configuring-notifications).
+
+The workflow cannot alert if GitHub never starts it, including when scheduling
+is disabled for inactivity. Check repository activity and the Actions page if
+expected runs stop appearing.
 
 ## Recovery and limitations
 
@@ -168,6 +188,7 @@ playlist creation. [Spotify's announcement](https://developer.spotify.com/blog/2
 
 ```sh
 python3 -m unittest -v
+node --test .github/scripts/archive-notifications.test.js
 ```
 
 Tests use fake Spotify responses and never create live playlists. Captures,
