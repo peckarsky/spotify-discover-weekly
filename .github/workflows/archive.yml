@@ -8,7 +8,8 @@ on:
         type: boolean
         default: true
   schedule:
-    - cron: '17 16 * * *'
+    # Sunday 21:00 PST (UTC-8) is Monday 05:00 UTC.
+    - cron: '0 5 * * 1'
 
 permissions:
   contents: read

@@ -111,11 +111,11 @@ for the first run. Once that succeeds, run again with **dry_run** unchecked to
 create the private playlist. A completed copy from a local run counts as already
 archived when you use the same Spotify account and source playlist.
 
-To enable daily archiving at 16:17 UTC, add the repository **variable**
+To enable weekly archiving on Sundays at 9 PM PST, add the repository **variable**
 `ARCHIVE_SCHEDULE_ENABLED` with the value `true`. Scheduling remains disabled
-until you set this variable. Daily runs allow multiple chances to capture the
-weekly refresh. This runs every day of the week, at 8:17 AM Pacific in winter
-and 9:17 AM Pacific in summer. GitHub may delay scheduled jobs. For another
+until you set this variable. The UTC schedule is Monday at 05:00 (`0 5 * * 1`).
+This uses fixed Pacific Standard Time (UTC-8), so it runs at 10 PM Pacific during
+daylight saving time. GitHub may delay scheduled jobs. For another
 account, also set the `SPOTIFY_SOURCE_URI` repository variable to that account's
 Discover Weekly URI.
 
