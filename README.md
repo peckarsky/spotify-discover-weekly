@@ -120,8 +120,8 @@ account, also set the `SPOTIFY_SOURCE_URI` repository variable to that account's
 Discover Weekly URI.
 
 The runner uses Spotify playlist descriptions as persistent archive records.
-It does not need a writable GitHub token, committed state, or credential-bearing
-artifacts. Concurrent workflow runs are serialized. Avoid running a local apply
+Archive state does not require Git pushes, committed state, or credential-bearing
+artifacts. The notification job uses the built-in Actions token to manage its alert issue. Concurrent workflow runs are serialized. Avoid running a local apply
 at the same time as Actions: Spotify does not provide atomic playlist creation
 by archive key, so simultaneous writers can still create duplicates.
 
