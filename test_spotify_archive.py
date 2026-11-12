@@ -71,6 +71,21 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(archive(api, capture()), (PLAYLIST_ID, False))
         self.assertEqual(len(api.writes), count)
 
+    def test_creation_description_has_no_control_characters(self):
+        api = FakeSpotify()
+        archive(api, capture())
+        description = api.playlists[0]["description"]
+        self.assertFalse(any(ord(character) < 32 for character in description))
+        self.assertLessEqual(len(description), 300)
+
+    def test_recognizes_completed_marker_with_surrounding_text(self):
+        api = FakeSpotify()
+        archive(api, capture())
+        api.playlists[0]["description"] = "My saved discoveries\n" + api.playlists[0]["description"] + "\nKeep"
+        writes = len(api.writes)
+        self.assertEqual(archive(api, capture()), (PLAYLIST_ID, False))
+        self.assertEqual(len(api.writes), writes)
+
     def test_retry_after_server_accepted_add_but_response_lost(self):
         api = FakeSpotify()
         api.fail_after_add = True

@@ -15,6 +15,12 @@ from spotify_oauth import access_token
 from spotify_probe import PLAYLIST_URI, QUERY_HASH, ProbeError, capture_playlist, fetch_page, web_credentials
 
 
+class SpotifyAPIError(ProbeError):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+
+
 class SpotifyAPI:
     def __init__(self, token):
         self.token = token
@@ -36,10 +42,12 @@ class SpotifyAPI:
                     message = ""
             except (ValueError, AttributeError, OSError):
                 pass
+            finally:
+                error.close()
             message = message.replace(self.token, "[redacted]")
             message = " ".join(message.split())[:300]
             endpoint = path.split("?", 1)[0]
-            raise ProbeError(f"Spotify API HTTP {error.code} during {method} {endpoint}. {message} Rerun to recover partial copies.") from None
+            raise SpotifyAPIError(error.code, f"Spotify API HTTP {error.code} during {method} {endpoint}. {message} Rerun to recover partial copies.") from None
         except (URLError, OSError, ValueError):
             # Never automatically retry a write whose server-side outcome is unknown.
             raise ProbeError("Spotify API request failed. Rerun to inspect and recover any partial copy.") from None
@@ -87,10 +95,12 @@ def archive_details(capture):
     key = hashlib.sha256((source + "\n" + week).encode()).hexdigest()
     digest = hashlib.sha256("\n".join(uris).encode()).hexdigest()
     marker = f"dw-archive:v1:{key}"
-    description = f"Discover Weekly for {week}. Source: {source}\n{marker};sha256={digest};status="
+    record = f"{marker};sha256={digest};status="
+    # Spotify rejects playlist creation when the description contains newlines.
+    description = f"Discover Weekly for {week}. Source: {source} | {record}"
     return {
         "week": week, "uris": uris, "marker": marker,
-        "name": f"Discover Weekly — {week}", "description": description,
+        "name": f"Discover Weekly — {week}", "description": description, "record": record,
     }
 
 
@@ -116,17 +126,17 @@ def archive(api, capture):
             raise ProbeError("Unexpected Spotify playlist response.")
         description = playlist.get("description") or ""
         if ((playlist.get("owner") or {}).get("id") == me["id"]
-                and any(line.startswith(details["marker"] + ";") for line in description.splitlines())):
+                and re.search(re.escape(details["marker"]) + r";sha256=[a-f0-9]{64};status=(?:pending|complete)\b", description)):
             matches.append(playlist)
     if len(matches) > 1:
         raise ProbeError("Multiple archives have the same marker. Resolve duplicate playlists manually.")
     if matches:
         playlist = matches[0]
         description = playlist.get("description") or ""
-        expected_marker = details["description"].split("\n")[-1]
-        if expected_marker + "complete" in description.splitlines():
+        expected_marker = details["record"]
+        if re.search(re.escape(expected_marker + "complete") + r"\b", description):
             return playlist["id"], False
-        if expected_marker + "pending" not in description.splitlines():
+        if not re.search(re.escape(expected_marker + "pending") + r"\b", description):
             raise ProbeError("Source tracks changed within an already archived week. Existing archive preserved.")
     else:
         playlist = api.request("POST", "/me/playlists", {

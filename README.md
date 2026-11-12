@@ -3,9 +3,9 @@
 Save a separate private Spotify playlist each week, preserving the source's track
 order and duplicates. For example: `Discover Weekly — 2026-11-09`.
 
-The source reader uses Spotify's internal Pathfinder endpoint. A local read of
-all 30 Discover Weekly tracks has been verified. Playlist writes and browser
-session renewal still need live verification with your account. Unit tests cover
+The source reader uses Spotify's internal Pathfinder endpoint. A GitHub-hosted
+read of all 30 Discover Weekly tracks and private playlist creation have been
+verified with the configured account. Unit tests cover
 pagination, archive recovery, repeat runs, and credential handling.
 
 ## Save the capture you already have
@@ -136,6 +136,8 @@ public source repo, or check scheduling regularly.
   date. Missing timestamps or a mixture of weeks cause an error.
 - A completed archive is left intact on repeat runs, including your later edits.
   Keep its description marker if you want the script to recognize it.
+- Generated playlist descriptions stay on one line because Spotify rejects
+  creation requests containing multiline descriptions.
 - After an interrupted write, the script checks the pending destination and
   appends only the missing suffix. It aborts if existing tracks differ, instead
   of overwriting them. It never automatically retries an ambiguous write.
