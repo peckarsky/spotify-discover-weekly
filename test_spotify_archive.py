@@ -1,11 +1,13 @@
 import copy
+import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from urllib.error import HTTPError
 
-from spotify_archive import archive, archive_details
+from spotify_archive import SpotifyAPI, archive, archive_details
 from spotify_browser import credentials_from_request
 from spotify_oauth import access_token, save_credentials
 from spotify_probe import ProbeError
@@ -138,6 +140,15 @@ class ArchiveTests(unittest.TestCase):
 
 
 class CredentialTests(unittest.TestCase):
+    def test_api_diagnostics_include_endpoint_and_redact_access_token(self):
+        body = io.BytesIO(json.dumps({"error": {"message": "Invalid request fake-secret-token"}}).encode())
+        error = HTTPError("https://api.spotify.com/v1/me/playlists", 400, "Bad request", {}, body)
+        with patch("spotify_archive.urlopen", side_effect=error):
+            with self.assertRaisesRegex(ProbeError, "POST /me/playlists") as caught:
+                SpotifyAPI("fake-secret-token").request("POST", "/me/playlists", {})
+        self.assertNotIn("fake-secret-token", str(caught.exception))
+        self.assertIn("Invalid request [redacted]", str(caught.exception))
+
     def test_browser_headers_only_accepted_from_spotify_pathfinder(self):
         headers = {"Authorization": "Bearer fake-access", "Client-Token": "fake-client"}
         url = "https://api-partner.spotify.com/pathfinder/v2/query"

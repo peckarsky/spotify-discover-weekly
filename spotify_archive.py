@@ -29,7 +29,17 @@ class SpotifyAPI:
                 raw = response.read()
                 return json.loads(raw) if raw else {}
         except HTTPError as error:
-            raise ProbeError(f"Spotify API HTTP {error.code} during {method}. Check OAuth access; rerun to recover partial copies.") from None
+            message = ""
+            try:
+                message = json.loads(error.read()).get("error", {}).get("message", "")
+                if not isinstance(message, str):
+                    message = ""
+            except (ValueError, AttributeError, OSError):
+                pass
+            message = message.replace(self.token, "[redacted]")
+            message = " ".join(message.split())[:300]
+            endpoint = path.split("?", 1)[0]
+            raise ProbeError(f"Spotify API HTTP {error.code} during {method} {endpoint}. {message} Rerun to recover partial copies.") from None
         except (URLError, OSError, ValueError):
             # Never automatically retry a write whose server-side outcome is unknown.
             raise ProbeError("Spotify API request failed. Rerun to inspect and recover any partial copy.") from None
